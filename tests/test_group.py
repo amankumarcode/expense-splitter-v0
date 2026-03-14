@@ -62,3 +62,34 @@ def test_calculate_balances_three_person_split():
     assert balances[alice] == 20.0
     assert balances[bob] == -10.0
     assert balances[carol] == -10.0
+
+
+def test_settle_debt_zeroes_debtor_balance():
+    group = Group(name="Trip")
+    alice = Person(name="Alice")
+    bob = Person(name="Bob")
+    carol = Person(name="Carol")
+    group.add_member(alice)
+    group.add_member(bob)
+    group.add_member(carol)
+    # Alice pays 30.0 split among Bob and Carol only — each owes 15.0
+    group.add_expense(description="Dinner", amount=30.0, paid_by=alice, split_among=[bob, carol])
+    group.settle_debt(debtor=bob, creditor=alice)
+    balances = group.calculate_balances()
+    assert balances[bob] == 0.0
+
+
+def test_simplify_debts_returns_minimum_transactions():
+    group = Group(name="Trip")
+    alice = Person(name="Alice")
+    bob = Person(name="Bob")
+    carol = Person(name="Carol")
+    group.add_member(alice)
+    group.add_member(bob)
+    group.add_member(carol)
+    # Alice pays 30.0 split among all three — Bob owes 10, Carol owes 10
+    group.add_expense(description="Groceries", amount=30.0, paid_by=alice, split_among=[alice, bob, carol])
+    transactions = group.simplify_debts()
+    assert len(transactions) == 2
+    assert (bob, alice, 10.0) in transactions
+    assert (carol, alice, 10.0) in transactions
